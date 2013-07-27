@@ -13,46 +13,46 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-# 
+#
 
 ############################################################################
-# 
+#
 # RETALIATION - A Jenkins "Extreme Feedback" Contraption
 #
-#    Lava Lamps are for pussies! Retaliate to a broken build with a barrage 
+#    Lava Lamps are for pussies! Retaliate to a broken build with a barrage
 #    of foam missiles.
 #
 # Steps to use:
 #
-#  1.  Mount your Dream Cheeky Thunder USB missile launcher in a central and 
+#  1.  Mount your Dream Cheeky Thunder USB missile launcher in a central and
 #      fixed location.
 #
 #  2.  Copy this script onto the system connected to your missile lanucher.
 #
-#  3.  Modify your `COMMAND_SETS` in the `retaliation.py` script to define 
-#      your targeting commands for each one of your build-braking coders 
-#      (their user ID as listed in Jenkins).  A command set is an array of 
-#      move and fire commands. It is recommend to start each command set 
-#      with a "zero" command.  This parks the launcher in a known position 
-#      (bottom-left).  You can then use "up" and "right" followed by a 
+#  3.  Modify your `COMMAND_SETS` in the `retaliation.py` script to define
+#      your targeting commands for each one of your build-braking coders
+#      (their user ID as listed in Jenkins).  A command set is an array of
+#      move and fire commands. It is recommend to start each command set
+#      with a "zero" command.  This parks the launcher in a known position
+#      (bottom-left).  You can then use "up" and "right" followed by a
 #      time (in milliseconds) to position your fire.
-# 
-#      You can test a set by calling retaliation.py with the target name. 
-#      e.g.:  
+#
+#      You can test a set by calling retaliation.py with the target name.
+#      e.g.:
 #
 #           retaliation.py "[developer's user name]"
 #
-#      Trial and error is the best approch. Consider doing this secretly 
+#      Trial and error is the best approch. Consider doing this secretly
 #      after hours for best results!
 #
-#  4.  Setup the Jenkins "notification" plugin. Define a UDP endpoint 
+#  4.  Setup the Jenkins "notification" plugin. Define a UDP endpoint
 #      on port 22222 pointing to the system hosting this script.
 #      Tip: Make sure your firewall is not blocking UDP on this port.
 #
 #  5.  Start listening for failed build events by running the command:
 #          retaliation.py stalk
-#      (Consider setting this up as a boot/startup script. On Windows 
-#      start with pythonw.exe to keep it running hidden in the 
+#      (Consider setting this up as a boot/startup script. On Windows
+#      start with pythonw.exe to keep it running hidden in the
 #      background.)
 #
 #  6.  Wait for DEFCON 1 - Let the war games begin!
@@ -61,7 +61,7 @@
 #  Requirements:
 #   * A Dream Cheeky Thunder USB Missile Launcher
 #   * Python 2.6+
-#   * Python PyUSB Support and its dependencies 
+#   * Python PyUSB Support and its dependencies
 #      http://sourceforge.net/apps/trac/pyusb/
 #      (on Mac use brew to "brew install libusb")
 #   * Should work on Windows, Mac and Linux
@@ -86,8 +86,8 @@ import usb.util
 ##########################  CONFIG   #########################
 
 #
-# Define a dictionary of "command sets" that map usernames to a sequence 
-# of commands to target the user (e.g their desk/workstation).  It's 
+# Define a dictionary of "command sets" that map usernames to a sequence
+# of commands to target the user (e.g their desk/workstation).  It's
 # suggested that each set start and end with a "zero" command so it's
 # always parked in a known reference location. The timing on move commands
 # is milli-seconds. The number after "fire" denotes the number of rockets
@@ -104,7 +104,7 @@ COMMAND_SETS = {
         ("zero", 0), # Park after use for next time
     ),
     "tom" : (
-        ("zero", 0), 
+        ("zero", 0),
         ("right", 4400),
         ("up", 200),
         ("fire", 4),
@@ -120,16 +120,34 @@ COMMAND_SETS = {
         ("fire", 1),
         ("zero", 0),
     ),
+    "_left": (
+        ("zero", 0),
+        ("right", 2200),
+    ),
+    "_right": (
+        # ("zero", 0),
+        ("right", 2200),
+    ),
+    # "chris" : (      # That's me - just dance around and missfire!
+    #     ("zero", 0),
+    #     ("right", 5200),
+    #     ("up", 500),
+    #     ("pause", 5000),
+    #     ("left", 2200),
+    #     ("down", 500),
+    #     ("fire", 1),
+    #     ("zero", 0),
+    # ),
 }
 
 #
-# The UDP port to listen to Jenkins events on (events are generated/supplied 
+# The UDP port to listen to Jenkins events on (events are generated/supplied
 # by Jenkins "notification" plugin)
 #
 JENKINS_NOTIFICATION_UDP_PORT   = 22222
 
 #
-# The URL of your Jenkins server - used to callback to determine who broke 
+# The URL of your Jenkins server - used to callback to determine who broke
 # the build.
 #
 JENKINS_SERVER                  = "http://192.168.1.100:23456"
@@ -181,7 +199,7 @@ def usage():
 def setup_usb():
     # Tested only with the Cheeky Dream Thunder
     # and original USB Launcher
-    global DEVICE 
+    global DEVICE
     global DEVICE_TYPE
 
     DEVICE = usb.core.find(idVendor=0x2123, idProduct=0x1010)
@@ -195,19 +213,20 @@ def setup_usb():
     else:
         DEVICE_TYPE = "Thunder"
 
-    
+
 
     # On Linux we need to detach usb HID first
     if "Linux" == platform.system():
         try:
             DEVICE.detach_kernel_driver(0)
         except Exception, e:
-            pass # already unregistered    
+            pass # already unregistered
 
     DEVICE.set_configuration()
 
 
 def send_cmd(cmd):
+    print DEVICE_TYPE
     if "Thunder" == DEVICE_TYPE:
         DEVICE.ctrl_transfer(0x21, 0x09, 0, 0, [0x02, cmd, 0x00,0x00,0x00,0x00,0x00,0x00])
     elif "Original" == DEVICE_TYPE:
@@ -226,6 +245,10 @@ def send_move(cmd, duration_ms):
 
 
 def run_command(command, value):
+
+    print command
+    print value
+
     command = command.lower()
     if command == "right":
         send_move(RIGHT, value)
@@ -291,7 +314,7 @@ def read_url(url):
 def jenkins_get_responsible_user(job_name):
     # Call back to Jenkins and determin who broke the build. (Hacky)
     # We do this by crudly parsing the changes on the last failed build
-    
+
     changes_url = JENKINS_SERVER + "/job/" + job_name + "/lastFailedBuild/changes"
     changedata = read_url(changes_url)
 
@@ -305,7 +328,7 @@ def jenkins_get_responsible_user(job_name):
 
 def jenkins_wait_for_event():
 
-    # Data in the format: 
+    # Data in the format:
     #   {"name":"Project", "url":"JobUrl", "build":{"number":1, "phase":"STARTED", "status":"FAILURE" }}
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -327,15 +350,18 @@ def jenkins_wait_for_event():
                 jenkins_target_user(target)
         except:
             pass
-                
+
 
 def main(args):
 
-    if len(args) < 2:
-        usage()
-        sys.exit(1)
+
+    # if len(args) < 2:
+    #     usage()
+    #     sys.exit(1)
 
     setup_usb()
+
+    send_move(UP, 2000)
 
     if args[1] == "stalk":
         print "Listening and waiting for Jenkins failed build events..."
