@@ -120,13 +120,26 @@ COMMAND_SETS = {
         ("fire", 1),
         ("zero", 0),
     ),
-    "_left": (
+    "nuno" : (
         ("zero", 0),
-        ("right", 2200),
-    ),
-    "_right": (
-        # ("zero", 0),
-        ("right", 2200),
+        ("right", 4200),
+        ("up", 500),
+        # ("pause", 5000),
+        # ("left", 2200),
+        # ("down", 500),
+        ("led", 1), # Turn the LED on
+        ("fire", 1),
+        # ("pause", 2000),
+        ("left", 400),
+        ("right", 400),
+        ("fire", 1),
+        # ("up", 600),
+        ("down", 100),
+        ("fire", 1),
+        ("up", 100),
+        ("fire", 1),
+        ("zero", 0),
+        ("led", 0),
     ),
     # "chris" : (      # That's me - just dance around and missfire!
     #     ("zero", 0),
